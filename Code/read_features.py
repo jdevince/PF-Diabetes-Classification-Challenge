@@ -5,10 +5,11 @@ Created on Apr 27, 2015
 '''
 
 #Used to analyze features to extract most important features
+#Run this after running ENSEMBLE - RF, SVM, NB (or file won't exist)
 
 import pickle
 
-with open("feature_importances_full_test_with_age_plus_5000_trees", 'rb') as f:
+with open("feature_importances", 'rb') as f:
     my_list = pickle.load(f)
 
 list = []

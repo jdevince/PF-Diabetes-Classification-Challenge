@@ -1,4 +1,4 @@
-#Practice Fusion Diabetes Classification Challenge  
+Practice Fusion Diabetes Classification Challenge  
 https://www.kaggle.com/c/pf2012-diabetes  
     
 Author: Jeffrey DeVince
@@ -13,3 +13,9 @@ and challenged paticipants to build a model to accurately predict the probabilit
 ------------------------------------------------------------------------
 
 Full Paper and Presentation Slides available above
+
+Technical Notes:
+-Python 2.7
+-Requires numpy and sklearn python modules. I recommend using the Anaconda python distribution which comes with these and many other useful data science packages
+
+

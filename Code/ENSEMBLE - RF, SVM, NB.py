@@ -7,6 +7,21 @@ Created on May 12, 2015
 #Training and testing for 3 machine learning methods on diabetes data
 #Ensemble method using Random Forest, Support Vector Machine, and Naive Bayes
 
+#********
+#SETTINGS
+#********
+
+#Specify how many patients to train the model on and how many patients to test the model on
+#The more patients you train on, the more accurate your model will be, but the longer it will take to compute
+#Your testing count should be ~30-50% of your training amount
+#The training + testing count total cannot exceed 9948 (number of patients in training_patient) or an error will occur
+train_patients_count = 50 #How many patient to train the model on
+test_patients_count = 5 #How many patients to test the model on
+
+#********
+#END OF SETTINGS
+#********
+
 import time
 start_time = time.time()
 
@@ -15,7 +30,7 @@ import numpy
 import pickle
 
 import sqlite3
-database_loc = 'C:\\Users\\Class2015\\Documents\\Stevens Semesters\\2015\\Spring 2015\\Health Informatics\\Final Project\\Downloaded files\\compDataAsSQLiteDB\\compData.db'
+database_loc = '..\\Data\\compData.db'
 database = sqlite3.connect(database_loc)
 
 #X_array = list of features to be given to random forest trainer
@@ -171,8 +186,9 @@ def get_MedicationName(patient):
             code[location] +=1
     return code
 
-x=0
-for patient in patientIDs[0:6500]: #0 to 6500
+print "Starting training"
+x=1
+for patient in patientIDs[0:train_patients_count]:
     new_features_list = get_all_medians_from_training_transcript(patient) #BMI through Temperature, 0-7
     new_features_list.append(get_gender(patient)) #8
     new_features_list.append(get_YearOfBirth(patient)) #9
@@ -189,7 +205,7 @@ for patient in patientIDs[0:6500]: #0 to 6500
     
     print x,
     x=x+1
-
+print "\nFinished training"
 
   
 forest_object = forest_object.fit(X_array, Y_array) #random forest
@@ -201,11 +217,11 @@ print
 print "oob_score_ = %f" % forest_object.oob_score_
 this_oob_score = forest_object.oob_score_
 
-print "feature_importances_ = "
-print forest_object.feature_importances_
-print forest_object.feature_importances_.size
+#print "feature_importances_ = "
+#print forest_object.feature_importances_
+#print forest_object.feature_importances_.size
 
-with open("feature_importances_", 'wb') as f:
+with open("feature_importances", 'wb') as f:
     pickle.dump(forest_object.feature_importances_, f)
 """
 for x in range(0,forest_object.feature_importances_.size):
@@ -241,14 +257,16 @@ total_log_loss_rf_nb=0.0
 single_log_loss_svm_nb = 0.0
 total_log_loss_svm_nb=0.0
 
-x=0
-for patient in patientIDs[6501:9948]: #6501 to 9948
+print "Starting testing"
+x=1
+for patient in patientIDs[train_patients_count:train_patients_count+test_patients_count]:
     new_features_list = get_all_medians_from_training_transcript(patient)
     new_features_list.append(get_gender(patient))
     new_features_list.append(get_YearOfBirth(patient))
     new_features_list = new_features_list + get_HL7Text(patient)
     new_features_list = new_features_list + get_DiagnosisDescription(patient)
     new_features_list = new_features_list + get_MedicationName(patient)
+    new_features_list = numpy.array(new_features_list).reshape(1, -1) #Prevent "Passing 1d arrays as data is deprecated in 0.17" warning
     
     predicted = forest_object.predict(new_features_list)
     proba_predicted_rf = forest_object.predict_proba(new_features_list)[0][1]
@@ -332,6 +350,8 @@ for patient in patientIDs[6501:9948]: #6501 to 9948
        
     print x,
     x+=1
+print "\nFinished testing"
+
 
 print
 print "Correct: %d" % correct

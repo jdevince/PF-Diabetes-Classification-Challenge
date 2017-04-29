@@ -6,6 +6,21 @@ Created on Apr 25, 2015
 
 #Training and testing of a Random Forrest model on the diabetes data
 
+#********
+#SETTINGS
+#********
+
+#Specify how many patients to train the model on and how many patients to test the model on
+#The more patients you train on, the more accurate your model will be, but the longer it will take to compute
+#Your testing count should be ~30-50% of your training amount
+#The training + testing count total cannot exceed 9948 (number of patients in training_patient) or an error will occur
+train_patients_count = 50 #How many patient to train the model on
+test_patients_count = 5 #How many patients to test the model on
+
+#********
+#END OF SETTINGS
+#********
+
 import time
 start_time = time.time()
 
@@ -13,7 +28,7 @@ import math
 import numpy
 
 import sqlite3
-database_loc = 'C:\\Users\\Class2015\\Documents\\Stevens Semesters\\2015\\Spring 2015\\Health Informatics\\Final Project\\Downloaded files\\compDataAsSQLiteDB\\compData.db'
+database_loc = '..\\Data\\compData.db'
 database = sqlite3.connect(database_loc)
 
 #X_array = [BMI1,YearOfBirth1,ICD9Code1,[list of lab tests1], [next one]]
@@ -27,7 +42,7 @@ forest_object = RandomForestClassifier(n_estimators=2000,oob_score=True)
 
 data = database.cursor()
 training_patientIDs = data.execute('SELECT DISTINCT PatientGuid FROM training_patient').fetchall() 
-testing_patientIDs = data.execute('SELECT DISTINCT PatientGuid FROM test_patient').fetchall() 
+#testing_patientIDs = data.execute('SELECT DISTINCT PatientGuid FROM test_patient').fetchall() #Unused because testing dataset does not include whether patient has diabetes or not
 #9948 total patientIDs from training_patient, 4979 from test_patient
 
 def get_all_medians_from_transcript(patient,train_or_test):
@@ -183,14 +198,15 @@ def get_MedicationName(patient, train_or_test):
             code[location] +=1
     return code
 
-x=0
-for patient in training_patientIDs[0:20]:
+print "Starting training"
+x=1
+for patient in training_patientIDs[0:train_patients_count]:
     new_features_list = get_all_medians_from_transcript(patient,0) #BMI through Temperature
     new_features_list.append(get_gender(patient,0))
     new_features_list = new_features_list + get_HL7Text(patient,0)
     new_features_list = new_features_list + get_DiagnosisDescription(patient,0)
     new_features_list = new_features_list + get_MedicationName(patient,0)
-    print new_features_list
+    #print new_features_list
     X_array.append(new_features_list) 
     
     """Target Data"""
@@ -200,6 +216,7 @@ for patient in training_patientIDs[0:20]:
     
     print x,
     x=x+1
+print "\nFinished training"   
     
 forest_object = forest_object.fit(X_array, Y_array) #random forest
 print
@@ -223,17 +240,19 @@ total_diabetes_diagnosis = 0
 single_log_loss = 0.0
 total_log_loss=0.0
 
-x=0
-for patient in testing_patientIDs[0:20]:
-    new_features_list = get_all_medians_from_transcript(patient,1)
-    new_features_list.append(get_gender(patient,1))
-    new_features_list = new_features_list + get_HL7Text(patient,1)
-    new_features_list = new_features_list + get_DiagnosisDescription(patient,1)
-    new_features_list = new_features_list + get_MedicationName(patient,1)
-    print new_features_list
+print "Starting testing"
+x=1
+for patient in training_patientIDs[train_patients_count:train_patients_count+test_patients_count]:
+    new_features_list = get_all_medians_from_transcript(patient,0)
+    new_features_list.append(get_gender(patient,0))
+    new_features_list = new_features_list + get_HL7Text(patient,0)
+    new_features_list = new_features_list + get_DiagnosisDescription(patient,0)
+    new_features_list = new_features_list + get_MedicationName(patient,0)
+    new_features_list = numpy.array(new_features_list).reshape(1, -1) #Prevent "Passing 1d arrays as data is deprecated in 0.17" warning
+    #print new_features_list
     predicted = forest_object.predict(new_features_list)
     proba_predicted = forest_object.predict_proba(new_features_list)[0][1]
-    correct_answer = data.execute("SELECT dmIndicator FROM test_patient WHERE PatientGuid= '%s'" % patient[0]).fetchone()[0]
+    correct_answer = data.execute("SELECT dmIndicator FROM training_patient WHERE PatientGuid= '%s'" % patient[0]).fetchone()[0]
     
     if correct_answer == 1:
         total_diabetes_diagnosis+=1
@@ -253,8 +272,10 @@ for patient in testing_patientIDs[0:20]:
     total_log_loss += single_log_loss
     print x,
     x+=1
+print "\nFinished testing"
 
-print
+print 
+print "*** Results ***"
 print "Correct: %d" % correct
 print "Incorrect: %d" % incorrect
 print "Total Tested: %d" % total_tested
