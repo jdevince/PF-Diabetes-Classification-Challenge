@@ -15,7 +15,7 @@ Created on Apr 25, 2015
 #Your testing count should be ~30-50% of your training amount
 #The training + testing count total cannot exceed 9948 (number of patients in training_patient) or an error will occur
 train_patients_count = 50 #How many patient to train the model on
-test_patients_count = 5 #How many patients to test the model on
+test_patients_count = 20 #How many patients to test the model on
 
 #********
 #END OF SETTINGS
